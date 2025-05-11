@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "postgres",
+    "password": "Care@123",
+    "database": "api_gateway",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  },
+  "test": {
+   "username": "postgres",
+    "password": "Care@123",
+    "database": "api_gateway",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  },
+  "production": {
+   "username": "postgres",
+    "password": "Care@123",
+    "database": "api_gateway",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  }
+}
