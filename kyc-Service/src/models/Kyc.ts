@@ -1,7 +1,7 @@
-import { Model, DataTypes } from 'sequelize';
+import { Model, DataTypes, Optional } from 'sequelize';
 import sequelize from '../config/database';
 
-interface KycAttributes {
+export interface KycAttributes {
   id: number;
   userId: string;
   aadhaarNumber: string;
@@ -16,7 +16,9 @@ interface KycAttributes {
   updatedAt?: Date;
 }
 
-class Kyc extends Model<KycAttributes> implements KycAttributes {
+interface KycCreationAttributes extends Optional<KycAttributes, 'id' | 'verificationDate' | 'createdAt' | 'updatedAt'> {}
+
+class Kyc extends Model<KycAttributes, KycCreationAttributes> implements KycAttributes {
   public id!: number;
   public userId!: string;
   public aadhaarNumber!: string;

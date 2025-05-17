@@ -3,6 +3,23 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+interface TokenResponse {
+  access_token: string;
+}
+
+interface AadhaarDetails {
+  aadhaar_number: string;
+  name: string;
+  date_of_birth: string;
+  gender: string;
+  address: string;
+  digilocker_id: string;
+}
+
+interface VerificationResponse {
+  verified: boolean;
+}
+
 class DigiLockerService {
   private readonly clientId: string;
   private readonly clientSecret: string;
@@ -22,7 +39,7 @@ class DigiLockerService {
 
   async getAccessToken(code: string): Promise<string> {
     try {
-      const response = await axios.post(`${this.apiUrl}/token`, {
+      const response = await axios.post<TokenResponse>(`${this.apiUrl}/token`, {
         grant_type: 'authorization_code',
         code,
         client_id: this.clientId,
@@ -36,9 +53,9 @@ class DigiLockerService {
     }
   }
 
-  async fetchAadhaarDetails(accessToken: string): Promise<any> {
+  async fetchAadhaarDetails(accessToken: string): Promise<AadhaarDetails> {
     try {
-      const response = await axios.get(`${this.apiUrl}/aadhaar`, {
+      const response = await axios.get<AadhaarDetails>(`${this.apiUrl}/aadhaar`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -52,7 +69,7 @@ class DigiLockerService {
 
   async verifyAadhaar(aadhaarNumber: string, accessToken: string): Promise<boolean> {
     try {
-      const response = await axios.post(
+      const response = await axios.post<VerificationResponse>(
         `${this.apiUrl}/verify`,
         {
           aadhaar_number: aadhaarNumber,

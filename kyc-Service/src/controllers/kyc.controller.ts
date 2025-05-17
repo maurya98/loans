@@ -1,6 +1,16 @@
 import { Request, Response } from 'express';
-import Kyc from '../models/Kyc';
+import Kyc, { KycAttributes } from '../models/Kyc';
 import digilockerService from '../services/digilocker.service';
+
+// Ensure TypeScript picks up our custom type definitions
+declare module 'express-serve-static-core' {
+  interface Request {
+    user?: {
+      id: string;
+      [key: string]: any;
+    };
+  }
+}
 
 class KycController {
   async initiateKyc(req: Request, res: Response) {
@@ -19,23 +29,28 @@ class KycController {
         return res.status(400).json({ error: 'Invalid authorization code' });
       }
 
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
       const accessToken = await digilockerService.getAccessToken(code);
       const aadhaarDetails = await digilockerService.fetchAadhaarDetails(accessToken);
 
       // Create KYC record
       const kyc = await Kyc.create({
-        userId: req.user?.id, // Assuming you have user authentication middleware
+        userId: req.user.id,
         aadhaarNumber: aadhaarDetails.aadhaar_number,
         name: aadhaarDetails.name,
         dateOfBirth: new Date(aadhaarDetails.date_of_birth),
         gender: aadhaarDetails.gender,
         address: aadhaarDetails.address,
         digilockerId: aadhaarDetails.digilocker_id,
-        status: 'pending',
+        status: 'pending' as const,
       });
 
       res.json({ message: 'KYC process initiated successfully', kycId: kyc.id });
     } catch (error) {
+      console.error('KYC callback error:', error);
       res.status(500).json({ error: 'Failed to process KYC callback' });
     }
   }
