@@ -118,6 +118,11 @@ Generate a PDF using a template and provided data.
 |-----------|------|-------------|
 | templateId | Long | ID of the template |
 
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| password | String | No | Optional password to protect the generated PDF. If provided, the PDF will be encrypted and require this password to open. |
+
 **Request Body:**
 ```json
 {
@@ -150,15 +155,33 @@ Generate a PDF using a template and provided data.
 ```
 
 **Response:**
-- Content-Type: `application/pdf`
-- Content-Disposition: `attachment; filename=generated-{timestamp}.pdf`
-- Binary PDF data
+- Content-Type: `application/json`
+```json
+{
+    "fileName": "generated-1234567890.pdf",
+    "contentType": "application/pdf",
+    "data": "JVBERi0xLjcKCjEgMCBvYmoKPDwKL1R5cGUgL0NhdGFsb2cKL1BhZ2VzIDI..."  // Base64 encoded PDF content
+}
+```
 
 **Status Codes:**
 - 200: Success
 - 404: Template not found
 - 400: Bad Request (invalid data)
 - 500: Internal Server Error
+
+**Example Usage:**
+```bash
+# Generate PDF without password
+curl -X POST http://localhost:8080/api/templates/1/generate \
+  -H "Content-Type: application/json" \
+  -d @invoice-data.json
+
+# Generate password-protected PDF
+curl -X POST "http://localhost:8080/api/templates/1/generate?password=mysecret" \
+  -H "Content-Type: application/json" \
+  -d @invoice-data.json
+```
 
 ### 4. List Templates
 Retrieve a list of all available templates.
@@ -226,23 +249,10 @@ curl http://localhost:8080/api/templates/1/fields
 ```bash
 curl -X POST http://localhost:8080/api/templates/1/generate \
   -H "Content-Type: application/json" \
-  -d @invoice-data.json \
-  --output generated-invoice.pdf
+  -d @invoice-data.json
 ```
 
 ### 4. List Templates
 ```bash
 curl http://localhost:8080/api/templates
 ```
-
-## Future Enhancements
-1. Authentication and Authorization
-2. Rate Limiting
-3. Template Categories and Tags
-4. Template Versioning
-5. Batch PDF Generation
-6. PDF Preview
-7. Template Validation
-8. Custom Font Support
-9. Watermark Support
-10. Digital Signature Support 

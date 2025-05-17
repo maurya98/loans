@@ -11,12 +11,14 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import java.util.Base64;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/templates")
@@ -55,28 +57,30 @@ public class TemplateController {
     }
 
     @PostMapping("/{templateId}/generate")
-    public ResponseEntity<ByteArrayResource> generatePdf(
+    public ResponseEntity<Map<String, String>> generatePdf(
             @PathVariable Long templateId,
-            @RequestBody Map<String, Object> data) throws IOException {
+            @RequestBody Map<String, Object> data,
+            @RequestParam(required = false) String password) throws IOException {
         
         Template template = templateRepository.findById(templateId)
                 .orElseThrow(() -> new RuntimeException("Template not found"));
 
         byte[] pdfBytes;
         if (template.getType() == Template.TemplateType.HTML) {
-            pdfBytes = pdfService.generateFromHtml(template, data);
+            pdfBytes = pdfService.generateFromHtml(template, data, password);
         } else {
-            pdfBytes = pdfService.generateFromPdf(template, data);
+            pdfBytes = pdfService.generateFromPdf(template, data, password);
         }
 
-        ByteArrayResource resource = new ByteArrayResource(pdfBytes);
+        String base64Pdf = Base64.getEncoder().encodeToString(pdfBytes);
+        Map<String, String> response = new HashMap<>();
+        response.put("fileName", "generated-" + System.currentTimeMillis() + ".pdf");
+        response.put("contentType", MediaType.APPLICATION_PDF_VALUE);
+        response.put("data", base64Pdf);
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, 
-                    "attachment; filename=generated-" + System.currentTimeMillis() + ".pdf")
-                .contentType(MediaType.APPLICATION_PDF)
-                .contentLength(pdfBytes.length)
-                .body(resource);
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(response);
     }
 
     @GetMapping

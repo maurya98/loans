@@ -1,9 +1,12 @@
 package com.pdfgeneration.service;
 
 import com.itextpdf.html2pdf.HtmlConverter;
+import com.itextpdf.html2pdf.ConverterProperties;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.WriterProperties;
+import com.itextpdf.kernel.pdf.EncryptionConstants;
 import com.itextpdf.forms.PdfAcroForm;
 import com.itextpdf.forms.fields.PdfFormField;
 import com.pdfgeneration.model.Template;
@@ -13,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,28 +31,60 @@ public class PdfService {
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
 
-    public byte[] generateFromHtml(Template template, Map<String, Object> data) throws IOException {
+    public byte[] generateFromHtml(Template template, Map<String, Object> data, String password) throws IOException {
         log.info("Generating PDF from HTML template: {}", template.getName());
-        log.debug("Template data: {}", data);
+        // log.debug("Template data: {}", data);
 
         String content = Files.readString(Paths.get(template.getFilePath()));
         String filledContent = replaceTemplateVariables(content, data);
         
         // Log the filled content for debugging
-        log.debug("Filled template content: {}", filledContent);
+        // log.debug("Filled template content: {}", filledContent);
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        HtmlConverter.convertToPdf(filledContent, outputStream);
+        
+        // If password is provided, set up encryption
+        if (password != null && !password.isEmpty()) {
+            WriterProperties writerProperties = new WriterProperties()
+                .setStandardEncryption(
+                    password.getBytes(),
+                    password.getBytes(), // owner password same as user password
+                    EncryptionConstants.ALLOW_PRINTING,
+                    EncryptionConstants.ENCRYPTION_AES_128
+                );
+            PdfWriter writer = new PdfWriter(outputStream, writerProperties);
+            PdfDocument pdfDoc = new PdfDocument(writer);
+            HtmlConverter.convertToPdf(filledContent, pdfDoc, new ConverterProperties());
+            pdfDoc.close();
+        } else {
+            HtmlConverter.convertToPdf(filledContent, outputStream);
+        }
+        
         return outputStream.toByteArray();
     }
 
-    public byte[] generateFromPdf(Template template, Map<String, Object> data) throws IOException {
+    public byte[] generateFromPdf(Template template, Map<String, Object> data, String password) throws IOException {
         log.info("Generating PDF from PDF template: {}", template.getName());
         log.debug("Template data: {}", data);
 
         PdfReader reader = new PdfReader(template.getFilePath());
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        PdfWriter writer = new PdfWriter(outputStream);
+        
+        // Set up writer with encryption if password is provided
+        PdfWriter writer;
+        if (password != null && !password.isEmpty()) {
+            WriterProperties writerProperties = new WriterProperties()
+                .setStandardEncryption(
+                    password.getBytes(),
+                    password.getBytes(), // owner password same as user password
+                    EncryptionConstants.ALLOW_PRINTING,
+                    EncryptionConstants.ENCRYPTION_AES_128
+                );
+            writer = new PdfWriter(outputStream, writerProperties);
+        } else {
+            writer = new PdfWriter(outputStream);
+        }
+
         PdfDocument pdfDoc = new PdfDocument(reader, writer);
         PdfAcroForm form = PdfAcroForm.getAcroForm(pdfDoc, true);
 
