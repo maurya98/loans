@@ -1,9 +1,9 @@
 package com.pdfgeneration.repository;
 
 import com.pdfgeneration.model.Template;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import io.quarkus.hibernate.orm.panache.PanacheRepository;
+import jakarta.enterprise.context.ApplicationScoped;
 
-@Repository
-public interface TemplateRepository extends JpaRepository<Template, Long> {
+@ApplicationScoped
+public class TemplateRepository implements PanacheRepository<Template> {
 } 

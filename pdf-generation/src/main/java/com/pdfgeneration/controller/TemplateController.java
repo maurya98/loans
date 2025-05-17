@@ -4,66 +4,106 @@ import com.pdfgeneration.model.Template;
 import com.pdfgeneration.service.PdfService;
 import com.pdfgeneration.repository.TemplateRepository;
 import com.pdfgeneration.util.TemplateAnalyzer;
-import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import java.util.Base64;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import lombok.extern.slf4j.Slf4j;
+import org.jboss.resteasy.annotations.Form;
+import jakarta.ws.rs.FormParam;
+import jakarta.transaction.Transactional;
+import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
+import org.jboss.resteasy.plugins.providers.multipart.InputPart;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 
-@RestController
-@RequestMapping("/api/templates")
-@RequiredArgsConstructor
+@Slf4j
+@Path("/api/templates")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class TemplateController {
 
-    private final TemplateRepository templateRepository;
-    private final PdfService pdfService;
-    private final TemplateAnalyzer templateAnalyzer;
+    @Inject
+    TemplateRepository templateRepository;
 
-    @PostMapping
-    public ResponseEntity<Template> uploadTemplate(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("type") Template.TemplateType type) throws IOException {
+    @Inject
+    PdfService pdfService;
+
+    @Inject
+    TemplateAnalyzer templateAnalyzer;
+
+    public static class TemplateUploadForm {
+        @FormParam("file")
+        public File file;
+
+        @FormParam("fileName")
+        public String fileName;
+
+        @FormParam("type")
+        public Template.TemplateType type;
+    }
+
+    @POST
+    @Transactional
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Response uploadTemplate(MultipartFormDataInput input) throws IOException {
+        Map<String, List<InputPart>> uploadForm = input.getFormDataMap();
+        List<InputPart> inputParts = uploadForm.get("file");
         
-        String filePath = pdfService.saveTemplate(file, type);
+        if (inputParts == null || inputParts.isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "File content cannot be empty"))
+                    .build();
+        }
+
+        String fileName = uploadForm.get("fileName").get(0).getBodyAsString();
+        Template.TemplateType type = Template.TemplateType.valueOf(uploadForm.get("type").get(0).getBodyAsString());
         
         Template template = new Template();
-        template.setName(file.getOriginalFilename());
+        template.setName(fileName);
         template.setType(type);
+        
+        byte[] fileContent = inputParts.get(0).getBody(byte[].class, null);
+        String filePath = pdfService.saveTemplate(fileContent, fileName, type);
         template.setFilePath(filePath);
         
-        Template savedTemplate = templateRepository.save(template);
-        return ResponseEntity.ok(savedTemplate);
+        templateRepository.persist(template);
+        return Response.ok(template).build();
     }
 
-    @GetMapping("/{templateId}/fields")
-    public ResponseEntity<Map<String, Object>> getTemplateFields(@PathVariable Long templateId) throws IOException {
-        Template template = templateRepository.findById(templateId)
-                .orElseThrow(() -> new RuntimeException("Template not found"));
+    @GET
+    @Path("/{templateId}/fields")
+    public Response getTemplateFields(@PathParam("templateId") Long templateId) throws IOException {
+        Template template = templateRepository.findById(templateId);
+        if (template == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(Map.of("error", "Template not found"))
+                    .build();
+        }
 
-        String templateContent = Files.readString(Paths.get(template.getFilePath()));
-        Map<String, Object> analysis = templateAnalyzer.analyzeTemplate(templateContent);
-        
-        return ResponseEntity.ok(analysis);
+        Map<String, Object> analysis = templateAnalyzer.analyzeTemplate(template);
+        return Response.ok(analysis).build();
     }
 
-    @PostMapping("/{templateId}/generate")
-    public ResponseEntity<Map<String, String>> generatePdf(
-            @PathVariable Long templateId,
-            @RequestBody Map<String, Object> data,
-            @RequestParam(required = false) String password) throws IOException {
+    @POST
+    @Path("/{templateId}/generate")
+    public Response generatePdf(
+            @PathParam("templateId") Long templateId,
+            @QueryParam("password") String password,
+            Map<String, Object> data) throws IOException {
         
-        Template template = templateRepository.findById(templateId)
-                .orElseThrow(() -> new RuntimeException("Template not found"));
+        Template template = templateRepository.findById(templateId);
+        if (template == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(Map.of("error", "Template not found"))
+                    .build();
+        }
 
         byte[] pdfBytes;
         if (template.getType() == Template.TemplateType.HTML) {
@@ -75,17 +115,15 @@ public class TemplateController {
         String base64Pdf = Base64.getEncoder().encodeToString(pdfBytes);
         Map<String, String> response = new HashMap<>();
         response.put("fileName", "generated-" + System.currentTimeMillis() + ".pdf");
-        response.put("contentType", MediaType.APPLICATION_PDF_VALUE);
+        response.put("contentType", "application/pdf");
         response.put("data", base64Pdf);
 
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(response);
+        return Response.ok(response).build();
     }
 
-    @GetMapping
-    public ResponseEntity<List<Template>> listTemplates() {
-        List<Template> templates = templateRepository.findAll();
-        return ResponseEntity.ok(templates);
+    @GET
+    public Response listTemplates() {
+        List<Template> templates = templateRepository.listAll();
+        return Response.ok(templates).build();
     }
-} 
+}

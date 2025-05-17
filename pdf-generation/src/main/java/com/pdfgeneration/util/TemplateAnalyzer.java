@@ -1,18 +1,21 @@
 package com.pdfgeneration.util;
 
-import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
-
+import com.pdfgeneration.model.Template;
+import jakarta.enterprise.context.ApplicationScoped;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Component
+@ApplicationScoped
 public class TemplateAnalyzer {
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{\\{([^}]+)\\}\\}");
     private static final Pattern LOOP_PATTERN = Pattern.compile("\\{\\{#([^}]+)\\}\\}");
 
-    public Map<String, Object> analyzeTemplate(String templateContent) {
+    public Map<String, Object> analyzeTemplate(Template template) throws IOException {
+        String templateContent = Files.readString(Paths.get(template.getFilePath()));
         Map<String, Object> analysis = new HashMap<>();
         Set<String> variables = new HashSet<>();
         Set<String> loops = new HashSet<>();
@@ -44,37 +47,36 @@ public class TemplateAnalyzer {
         }
 
         for (String loop : loops) {
-            List<Map<String, Object>> loopItems = new ArrayList<>();
+            List<Map<String, Object>> loopData = new ArrayList<>();
             Map<String, Object> sampleItem = new HashMap<>();
-            // Add some common fields that might be in a loop
-            sampleItem.put(loop + "Name", "Sample Item");
-            sampleItem.put(loop + "Description", "Sample Description");
-            sampleItem.put(loop + "Quantity", 1);
-            sampleItem.put(loop + "Price", 0.00);
-            loopItems.add(sampleItem);
-            sampleData.put(loop, loopItems);
+            sampleItem.put("id", 1);
+            sampleItem.put("value", "Sample " + loop + " item");
+            loopData.add(sampleItem);
+            sampleData.put(loop, loopData);
         }
 
         analysis.put("sampleData", sampleData);
         return analysis;
     }
 
-    private Object getSampleValue(String variable) {
-        String lowerVar = variable.toLowerCase();
-        if (lowerVar.contains("date")) {
+    private String getSampleValue(String variable) {
+        variable = variable.toLowerCase();
+        if (variable.contains("date")) {
             return "2024-03-15";
-        } else if (lowerVar.contains("number")) {
-            return "12345";
-        } else if (lowerVar.contains("phone")) {
-            return "(555) 123-4567";
-        } else if (lowerVar.contains("email")) {
-            return "example@email.com";
-        } else if (lowerVar.contains("amount") || lowerVar.contains("price") || lowerVar.contains("total")) {
-            return 0.00;
-        } else if (lowerVar.contains("address")) {
-            return "123 Sample Street, City, State 12345";
+        } else if (variable.contains("time")) {
+            return "14:30:00";
+        } else if (variable.contains("amount") || variable.contains("price")) {
+            return "1000.00";
+        } else if (variable.contains("email")) {
+            return "user@example.com";
+        } else if (variable.contains("phone")) {
+            return "+1-234-567-8900";
+        } else if (variable.contains("name")) {
+            return "John Doe";
+        } else if (variable.contains("address")) {
+            return "123 Main St, City, Country";
         } else {
-            return "Sample " + StringUtils.capitalize(variable);
+            return "Sample " + variable;
         }
     }
 } 

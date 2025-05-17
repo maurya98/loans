@@ -1,13 +1,11 @@
 package com.pdfgeneration;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import io.quarkus.runtime.Quarkus;
+import io.quarkus.runtime.annotations.QuarkusMain;
 
-@SpringBootApplication
-@EnableJpaRepositories
+@QuarkusMain
 public class PdfGenerationApplication {
     public static void main(String[] args) {
-        SpringApplication.run(PdfGenerationApplication.class, args);
+        Quarkus.run(args);
     }
 } 

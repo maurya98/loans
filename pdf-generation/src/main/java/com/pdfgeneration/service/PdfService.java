@@ -10,10 +10,9 @@ import com.itextpdf.kernel.pdf.EncryptionConstants;
 import com.itextpdf.forms.PdfAcroForm;
 import com.itextpdf.forms.fields.PdfFormField;
 import com.pdfgeneration.model.Template;
+import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -25,30 +24,25 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Slf4j
-@Service
+@ApplicationScoped
 public class PdfService {
 
-    @Value("${app.upload.dir:uploads}")
-    private String uploadDir;
+    @ConfigProperty(name = "quarkus.http.body.uploads-directory", defaultValue = "uploads")
+    String uploadDir;
 
     public byte[] generateFromHtml(Template template, Map<String, Object> data, String password) throws IOException {
         log.info("Generating PDF from HTML template: {}", template.getName());
-        // log.debug("Template data: {}", data);
 
         String content = Files.readString(Paths.get(template.getFilePath()));
         String filledContent = replaceTemplateVariables(content, data);
-        
-        // Log the filled content for debugging
-        // log.debug("Filled template content: {}", filledContent);
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         
-        // If password is provided, set up encryption
         if (password != null && !password.isEmpty()) {
             WriterProperties writerProperties = new WriterProperties()
                 .setStandardEncryption(
                     password.getBytes(),
-                    password.getBytes(), // owner password same as user password
+                    password.getBytes(),
                     EncryptionConstants.ALLOW_PRINTING,
                     EncryptionConstants.ENCRYPTION_AES_128
                 );
@@ -65,18 +59,16 @@ public class PdfService {
 
     public byte[] generateFromPdf(Template template, Map<String, Object> data, String password) throws IOException {
         log.info("Generating PDF from PDF template: {}", template.getName());
-        log.debug("Template data: {}", data);
 
         PdfReader reader = new PdfReader(template.getFilePath());
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         
-        // Set up writer with encryption if password is provided
         PdfWriter writer;
         if (password != null && !password.isEmpty()) {
             WriterProperties writerProperties = new WriterProperties()
                 .setStandardEncryption(
                     password.getBytes(),
-                    password.getBytes(), // owner password same as user password
+                    password.getBytes(),
                     EncryptionConstants.ALLOW_PRINTING,
                     EncryptionConstants.ENCRYPTION_AES_128
                 );
@@ -102,18 +94,21 @@ public class PdfService {
         return outputStream.toByteArray();
     }
 
-    public String saveTemplate(MultipartFile file, Template.TemplateType type) throws IOException {
+    public String saveTemplate(byte[] fileContent, String fileName, Template.TemplateType type) throws IOException {
+        if (fileContent == null || fileContent.length == 0) {
+            throw new IllegalArgumentException("File content cannot be empty");
+        }
+        
         createUploadDirectoryIfNotExists();
-        String fileName = generateUniqueFileName(file.getOriginalFilename());
-        Path filePath = Paths.get(uploadDir, fileName);
-        Files.write(filePath, file.getBytes());
+        String uniqueFileName = generateUniqueFileName(fileName);
+        Path filePath = Paths.get(uploadDir, uniqueFileName);
+        Files.write(filePath, fileContent);
         return filePath.toString();
     }
 
     private String replaceTemplateVariables(String content, Map<String, Object> data) {
         StringBuilder result = new StringBuilder(content);
         
-        // First handle loops
         Pattern loopPattern = Pattern.compile("\\{\\{#([^}]+)\\}\\}(.*?)\\{\\{/\\1\\}\\}", Pattern.DOTALL);
         Matcher loopMatcher = loopPattern.matcher(result);
         
@@ -139,18 +134,15 @@ public class PdfService {
                 log.warn("No data found for loop: {}", loopName);
             }
             
-            // Replace the entire loop section with the processed content
             int start = loopMatcher.start();
             int end = loopMatcher.end();
             result.replace(start, end, loopResult.toString());
             
-            // Reset the matcher to account for the new content length
             loopMatcher = loopPattern.matcher(result);
         }
 
-        // Then handle simple variables
         for (Map.Entry<String, Object> entry : data.entrySet()) {
-            if (!(entry.getValue() instanceof List)) {  // Skip lists as they're handled in loops
+            if (!(entry.getValue() instanceof List)) {
                 String key = entry.getKey();
                 Object value = entry.getValue();
                 if (value != null) {
@@ -165,7 +157,6 @@ public class PdfService {
             }
         }
 
-        // Log any remaining template variables
         Pattern remainingVarPattern = Pattern.compile("\\{\\{([^}]+)\\}\\}");
         Matcher remainingVarMatcher = remainingVarPattern.matcher(result);
         while (remainingVarMatcher.find()) {
@@ -183,7 +174,9 @@ public class PdfService {
     }
 
     private String generateUniqueFileName(String originalFileName) {
-        String extension = originalFileName.substring(originalFileName.lastIndexOf("."));
+        String extension = originalFileName != null && originalFileName.contains(".") 
+            ? originalFileName.substring(originalFileName.lastIndexOf("."))
+            : ".pdf";
         return UUID.randomUUID().toString() + extension;
     }
 } 
