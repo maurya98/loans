@@ -9,7 +9,6 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import lombok.extern.slf4j.Slf4j;
-import org.jboss.resteasy.annotations.Form;
 import jakarta.ws.rs.FormParam;
 import jakarta.transaction.Transactional;
 import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
@@ -17,7 +16,6 @@ import org.jboss.resteasy.plugins.providers.multipart.InputPart;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;

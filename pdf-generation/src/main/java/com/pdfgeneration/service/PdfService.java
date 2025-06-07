@@ -115,23 +115,30 @@ public class PdfService {
         while (loopMatcher.find()) {
             String loopName = loopMatcher.group(1);
             String loopContent = loopMatcher.group(2);
-            List<Map<String, Object>> items = (List<Map<String, Object>>) data.get(loopName);
+            Object loopData = data.get(loopName);
+            if (!(loopData instanceof List<?>)) {
+                log.warn("Loop data for {} is not a List", loopName);
+                continue;
+            }
+            List<?> rawList = (List<?>) loopData;
+            if (!rawList.isEmpty() && !(rawList.get(0) instanceof Map)) {
+                log.warn("Loop data for {} does not contain Map objects", loopName);
+                continue;
+            }
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> items = (List<Map<String, Object>>) rawList;
             
             StringBuilder loopResult = new StringBuilder();
-            if (items != null) {
-                for (Map<String, Object> item : items) {
-                    String itemContent = loopContent;
-                    for (Map.Entry<String, Object> entry : item.entrySet()) {
-                        String key = entry.getKey();
-                        Object value = entry.getValue();
-                        if (value != null) {
-                            itemContent = itemContent.replace("{{" + key + "}}", value.toString());
-                        }
+            for (Map<String, Object> item : items) {
+                String itemContent = loopContent;
+                for (Map.Entry<String, Object> entry : item.entrySet()) {
+                    String key = entry.getKey();
+                    Object value = entry.getValue();
+                    if (value != null) {
+                        itemContent = itemContent.replace("{{" + key + "}}", value.toString());
                     }
-                    loopResult.append(itemContent);
                 }
-            } else {
-                log.warn("No data found for loop: {}", loopName);
+                loopResult.append(itemContent);
             }
             
             int start = loopMatcher.start();
