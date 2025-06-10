@@ -44,11 +44,37 @@ export class S3StorageService implements IStorageService {
     }));
   }
 
-  async getSignedUrl(path: string, operation: 'upload' | 'download', expiresIn: number = 3600): Promise<string> {
-    const command = operation === 'upload' 
-      ? new PutObjectCommand({ Bucket: this.bucketName, Key: path })
-      : new GetObjectCommand({ Bucket: this.bucketName, Key: path });
-    
-    return getSignedUrl(this.s3Client, command, { expiresIn });
+  async getSignedUrl(path: string, operation: 'upload' | 'download', expiresIn: number = 3600, metadata?: { callbackUrl?: string, documentId?: string }): Promise<string> {
+    if (operation === 'upload') {
+      const command = new PutObjectCommand({
+        Bucket: this.bucketName,
+        Key: path,
+        Metadata: {
+          'callback-url': metadata?.callbackUrl || '',
+          'document-id': metadata?.documentId || ''
+        }
+      });
+      
+      return getSignedUrl(this.s3Client, command, { expiresIn });
+    } else {
+      const command = new GetObjectCommand({
+        Bucket: this.bucketName,
+        Key: path
+      });
+      
+      return getSignedUrl(this.s3Client, command, { expiresIn });
+    }
+  }
+
+  async getObjectMetadata(path: string): Promise<{ ETag: string, ContentLength: number }> {
+    const response = await this.s3Client.send(new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: path
+    }));
+
+    return {
+      ETag: response.ETag || '',
+      ContentLength: response.ContentLength || 0
+    };
   }
 } 

@@ -7,6 +7,7 @@ export class Document extends Model {
   public originalName!: string;
   public mimeType!: string;
   public size!: number;
+  public hash!: string;
   public storageType!: string;
   public storagePath!: string;
   public metadata!: string;
@@ -35,6 +36,10 @@ Document.init(
     },
     size: {
       type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    hash: {
+      type: DataTypes.STRING,
       allowNull: false,
     },
     storageType: {
