@@ -1,0 +1,176 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		"name": "Configuration Server API",
+		"description": "API collection for the Configuration Server",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Login to get JWT token"
+					}
+				}
+			]
+		},
+		{
+			"name": "Configurations",
+			"item": [
+				{
+					"name": "Create Configuration",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"applicationName\": \"loan-service\",\n    \"environment\": \"development\",\n    \"configKey\": \"database\",\n    \"configValue\": {\n        \"host\": \"localhost\",\n        \"port\": 5432,\n        \"database\": \"loans\",\n        \"username\": \"postgres\",\n        \"password\": \"postgres\"\n    },\n    \"isEncrypted\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/configurations",
+							"host": ["{{base_url}}"],
+							"path": ["api", "configurations"]
+						},
+						"description": "Create a new configuration (Admin only)"
+					}
+				},
+				{
+					"name": "Get All Configurations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/configurations/loan-service/development",
+							"host": ["{{base_url}}"],
+							"path": ["api", "configurations", "loan-service", "development"]
+						},
+						"description": "Get all configurations for an application and environment"
+					}
+				},
+				{
+					"name": "Get Configuration",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/configurations/loan-service/development/database",
+							"host": ["{{base_url}}"],
+							"path": ["api", "configurations", "loan-service", "development", "database"]
+						},
+						"description": "Get a specific configuration"
+					}
+				},
+				{
+					"name": "Update Configuration",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"configValue\": {\n        \"host\": \"localhost\",\n        \"port\": 5432,\n        \"database\": \"loans\",\n        \"username\": \"postgres\",\n        \"password\": \"new_password\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/configurations/loan-service/development/database",
+							"host": ["{{base_url}}"],
+							"path": ["api", "configurations", "loan-service", "development", "database"]
+						},
+						"description": "Update a configuration (Admin only)"
+					}
+				},
+				{
+					"name": "Delete Configuration",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/configurations/loan-service/development/database",
+							"host": ["{{base_url}}"],
+							"path": ["api", "configurations", "loan-service", "development", "database"]
+						},
+						"description": "Delete a configuration (Admin only)"
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [""]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [""]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "your_jwt_token_here",
+			"type": "string"
+		}
+	]
+} 

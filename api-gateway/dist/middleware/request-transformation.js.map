@@ -1,0 +1,1 @@
+{"version":3,"file":"request-transformation.js","sourceRoot":"","sources":["../../src/middleware/request-transformation.ts"],"names":[],"mappings":";;;AAEA,MAAa,qBAAqB;IACzB,MAAM,CAAC,SAAS;QACrB,OAAO,CAAC,GAAY,EAAE,GAAa,EAAE,IAAkB,EAAE,EAAE;YAKzD,IAAI,EAAE,CAAC;QACT,CAAC,CAAC;IACJ,CAAC;CACF;AAVD,sDAUC"}
