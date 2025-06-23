@@ -1,1 +1,0 @@
-{"version":3,"file":"response-transformation.js","sourceRoot":"","sources":["../../src/middleware/response-transformation.ts"],"names":[],"mappings":";;;AAEA,MAAa,sBAAsB;IAC1B,MAAM,CAAC,SAAS;QACrB,OAAO,CAAC,GAAY,EAAE,GAAa,EAAE,IAAkB,EAAE,EAAE;YAOzD,IAAI,EAAE,CAAC;QACT,CAAC,CAAC;IACJ,CAAC;CACF;AAZD,wDAYC"}

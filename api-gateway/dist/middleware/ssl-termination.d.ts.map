@@ -1,1 +1,0 @@
-{"version":3,"file":"ssl-termination.d.ts","sourceRoot":"","sources":["../../src/middleware/ssl-termination.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,OAAO,EAAE,QAAQ,EAAE,YAAY,EAAE,MAAM,SAAS,CAAC;AAG1D,qBAAa,cAAc;IACzB,OAAO,CAAC,MAAM,CAAC,MAAM,CAAgC;WAEvC,MAAM,KACV,KAAK,OAAO,EAAE,KAAK,QAAQ,EAAE,MAAM,YAAY;CAiB1D"}
